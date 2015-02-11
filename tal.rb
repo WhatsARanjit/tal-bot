@@ -18,8 +18,20 @@ $hi_string = /(#{$yaml['hi'].join('|')})/i
 $bye_string = /(#{$yaml['bye'].join('|')})/i
 $users = []
 
+class Seen < Struct.new(:who, :where, :what, :time)
+  def to_s
+    "[#{time.asctime}] #{who} was seen last in #{where} saying \"#{what}\"."
+  end
+end
+
 class Tal
   include Cinch::Plugin
+  listen_to :channel
+
+  def initialize(*args)
+    super
+    @seen = {}
+  end
 
   def urban_dict(query)
     url = "http://www.urbandictionary.com/define.php?term=#{CGI.escape(query)}"
@@ -36,16 +48,41 @@ class Tal
   end
 
   set :prefix, //
-  match /\b[Tt]al,?\b/
+
+  match /\b[Tt]al,? where is ([a-zA-Z0-9\-_]+)\b/, method: :seen, use_prefix: false
+  match /\b[Tt]al,?\b/, use_prefix: false
+
+  def seen(m, nick)
+    binding.pry
+    if nick == @bot.nick
+      m.reply "That's me!"
+    elsif nick == m.user.nick
+      m.reply "That's you!"
+    elsif @seen.key?(nick)
+      m.reply @seen[nick].to_s
+    else
+      m.reply "I haven't seen #{nick}"
+    end
+  end
+
+  def listen(m)
+    @seen[m.user.nick] = Seen.new(m.user, m.channel, m.message, Time.now)
+  end
 
   def execute(m)
     case m.message
+    when /\b(#{$yaml['curse'].join('|')})\b/i
+      m.reply "That's not necessary, #{m.user.nick}."
     when $hi_string
       reply = pick_reply($yaml['hi'])
       m.reply "#{reply}, #{m.user.nick}!"
     when $bye_string
       reply = pick_reply($yaml['bye'])
       m.reply "#{reply}, #{m.user.nick}!"
+    when /good morning/i
+      m.reply "Good morning, #{m.user.nick}."
+    when /shut up/i
+      m.reply "I'm sorry, #{m.user.nick}."
     when /no thanks?( you)?/i
       m.reply "No problem, #{m.user.nick}."
     when /thanks?( you)?/i
@@ -53,12 +90,14 @@ class Tal
     when /(what'?s the time|what time is it)/
       time = Time.new
       m.reply "The current time is #{time.inspect}."
+    when /where is/i
     when /define|(what is)/i
       term = /(?:define)|(?:what is\s?a?n?) (.*)\b/i.match(m.message)[1]
       m.reply(urban_dict(term) || "No results found", true)
     else
       m.reply "#{m.user.nick}, I don't understand."
     end
+    $users = []
   end
 
   $intal = rand(60...300)
@@ -92,6 +131,7 @@ bot = Cinch::Bot.new do
   
   on :channel do |m|
     $users << m.user.nick
+    debug "Target array: #{$users}"
   end
 
 end
