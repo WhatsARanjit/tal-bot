@@ -53,7 +53,6 @@ class Tal
   match /\b[Tt]al,?\b/, use_prefix: false
 
   def seen(m, nick)
-    binding.pry
     if nick == @bot.nick
       m.reply "That's me!"
     elsif nick == m.user.nick
@@ -67,6 +66,9 @@ class Tal
 
   def listen(m)
     @seen[m.user.nick] = Seen.new(m.user, m.channel, m.message, Time.now)
+    if m.message =~ /\b(#{$yaml['curse'].join('|')})\b/i
+      Channel($yaml['connect']['channels'].first).send "That's not necessary, #{m.user.nick}."
+    end
   end
 
   def execute(m)
@@ -82,6 +84,7 @@ class Tal
     when /good morning/i
       m.reply "Good morning, #{m.user.nick}."
     when /shut up/i
+      timers.first.interval=timers.first.interval+120
       m.reply "I'm sorry, #{m.user.nick}."
     when /no thanks?( you)?/i
       m.reply "No problem, #{m.user.nick}."
@@ -100,15 +103,14 @@ class Tal
     $users = []
   end
 
-  $intal = rand(60...300)
+  $intal = rand(90...300)
   timer rand($intal), method: :timed
   def timed
     begin
       target = self.pick_reply($users)
-      Channel($yaml['connect']['channels'].first).send "Get back to work, #{target}!"
+      Channel($yaml['connect']['channels'].first).send "#{self.pick_reply($yaml['talhate'])}, #{target}!"
       $users = []
     rescue
-      debug "No one is talking"
     else
       timers.first.interval = rand($intal)
     end
