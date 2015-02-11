@@ -8,14 +8,15 @@ require 'yaml'
 require 'pry'
 
 begin
-  yaml = YAML.load_file('/etc/tal.yaml')
+  $yaml = YAML.load_file('/etc/tal.yaml')
 rescue 
   $stderr.print "Error: Could not find file /etc/tal.yaml\n"
   exit 1
 end
 
-$hi_string = /(#{yaml['hi'].join('|')})/i
-$bye_string = /(#{yaml['bye'].join('|')})/i
+$hi_string = /(#{$yaml['hi'].join('|')})/i
+$bye_string = /(#{$yaml['bye'].join('|')})/i
+$users = []
 
 class Tal
   include Cinch::Plugin
@@ -25,15 +26,26 @@ class Tal
     CGI.unescape_html Nokogiri::HTML(open(url)).at("div.meaning").text.gsub(/\s+/, ' ') rescue nil
   end
 
+  def pick_reply(a)
+    i = a[rand(a.length-1)].gsub(/[\?\\]/, '')
+    if a == $users
+      i
+    else
+      i.capitalize
+    end 
+  end
+
   set :prefix, //
   match /\b[Tt]al,?\b/
 
   def execute(m)
     case m.message
     when $hi_string
-      m.reply "Hello, #{m.user.nick}!"
+      reply = pick_reply($yaml['hi'])
+      m.reply "#{reply}, #{m.user.nick}!"
     when $bye_string
-      m.reply "Bye, #{m.user.nick}!"
+      reply = pick_reply($yaml['bye'])
+      m.reply "#{reply}, #{m.user.nick}!"
     when /no thanks?( you)?/i
       m.reply "No problem, #{m.user.nick}."
     when /thanks?( you)?/i
@@ -49,12 +61,25 @@ class Tal
     end
   end
 
+  $intal = rand(60...300)
+  timer rand($intal), method: :timed
+  def timed
+    begin
+      target = self.pick_reply($users)
+      Channel($yaml['connect']['channels'].first).send "Get back to work, #{target}!"
+      $users = []
+    rescue
+      debug "No one is talking"
+    else
+      timers.first.interval = rand($intal)
+    end
+  end
 
 end
 
 bot = Cinch::Bot.new do
   configure do |c|
-    y                 = yaml['connect']
+    y                 = $yaml['connect']
     c.server          = y['server']
     c.port            = y['port']
     c.modes           = y['modes']    if y['modes']
@@ -63,6 +88,10 @@ bot = Cinch::Bot.new do
     c.nick            = 'Tal'
     c.user            = 'Tal'
     c.plugins.plugins = [Tal]
+  end
+  
+  on :channel do |m|
+    $users << m.user.nick
   end
 
 end
