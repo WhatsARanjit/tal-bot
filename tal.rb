@@ -14,6 +14,9 @@ rescue
   exit 1
 end
 
+$hi_string = /(#{yaml['hi'].join('|')})/i
+$bye_string = /(#{yaml['bye'].join('|')})/i
+
 class Tal
   include Cinch::Plugin
 
@@ -27,11 +30,15 @@ class Tal
 
   def execute(m)
     case m.message
-    when /hello/i
+    when $hi_string
       m.reply "Hello, #{m.user.nick}!"
-    when /what'?s up/
-      m.reply 'Get back to work!'
-    when /what'?s the time/
+    when $bye_string
+      m.reply "Bye, #{m.user.nick}!"
+    when /no thanks?( you)?/i
+      m.reply "No problem, #{m.user.nick}."
+    when /thanks?( you)?/i
+      m.reply "You're welcome, #{m.user.nick}."
+    when /(what'?s the time|what time is it)/
       time = Time.new
       m.reply "The current time is #{time.inspect}."
     when /define|(what is)/i
@@ -59,6 +66,5 @@ bot = Cinch::Bot.new do
   end
 
 end
-    binding.pry
 
 bot.start
