@@ -81,6 +81,9 @@ class Tal
     when $bye_string
       reply = pick_reply($yaml['bye'])
       m.reply "#{reply}, #{m.user.nick}!"
+    when /how are you/
+      reply = pick_reply($yaml['howareyou'])
+      m.reply "I'm #{reply}, #{m.user.nick}!"
     when /good morning/i
       m.reply "Good morning, #{m.user.nick}."
     when /shut up/i
@@ -100,17 +103,17 @@ class Tal
     else
       m.reply "#{m.user.nick}, I don't understand."
     end
-    $users = []
   end
 
-  $intal = rand(90...300)
+  $intal = rand(300...900)
   timer rand($intal), method: :timed
   def timed
     begin
       target = self.pick_reply($users)
-      Channel($yaml['connect']['channels'].first).send "#{self.pick_reply($yaml['talhate'])}, #{target}!"
+      Channel($yaml['connect']['channels'].first).send "[#{intal}] #{self.pick_reply($yaml['talhate'])}, #{target}!"
       $users = []
     rescue
+      $intal
     else
       timers.first.interval = rand($intal)
     end
