@@ -70,14 +70,14 @@ class Tal
     regexyou = /(\w+): s\/(.+)\/(.+)\//i.match(m.message)
     regexme = /s\/(.+)\/(.+)\//i.match(m.message)
     if regexyou
-      new = $history[regexyou[1]].gsub(/#{regexyou[2]}/i, regexyou[3])
+      new = Format( :italic, $history[regexyou[1]].gsub(/#{regexyou[2]}/i, regexyou[3]) )
       unless m.user.nick == regexyou[1]
         Channel($yaml['connect']['channels'].first).send "#{m.user.nick} thinks #{regexyou[1]} meant \"#{new}\""
       else
         Channel($yaml['connect']['channels'].first).send "#{m.user.nick} meant \"#{new}\""
       end
     elsif regexme
-      new = $history[m.user.nick].gsub(/#{regexme[1]}/i, regexme[2])
+      new = Format( :italic, $history[m.user.nick].gsub(/#{regexme[1]}/i, regexme[2]) )
       Channel($yaml['connect']['channels'].first).send "#{m.user.nick} meant \"#{new}\""
       $history[m.user.nick] = new
     elsif m.message =~ /\b(#{$yaml['curse'].join('|')})\b/i
