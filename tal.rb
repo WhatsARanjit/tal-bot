@@ -17,6 +17,7 @@ end
 $hi_string = /(#{$yaml['hi'].join('|')})/i
 $bye_string = /(#{$yaml['bye'].join('|')})/i
 $users = []
+$history = {}
 
 class Seen < Struct.new(:who, :where, :what, :time)
   def to_s
@@ -66,7 +67,16 @@ class Tal
 
   def listen(m)
     @seen[m.user.nick] = Seen.new(m.user, m.channel, m.message, Time.now)
-    if m.message =~ /\b(#{$yaml['curse'].join('|')})\b/i
+    regexyou = /(\w+): s\/(.+)\/(\w+)\//i.match(m.message)
+    regexme = /s\/(.+)\/(\w+)\//i.match(m.message)
+    if regexyou
+      new = $history[regexyou[1]].gsub(/#{regexyou[2]}/i, regexyou[3])
+      Channel($yaml['connect']['channels'].first).send "#{m.user.nick} thinks #{regexyou[1]} meant \"#{new}\""
+    elsif regexme
+      new = $history[m.user.nick].gsub(/#{regexme[1]}/i, regexme[2])
+      Channel($yaml['connect']['channels'].first).send "#{m.user.nick} meant \"#{new}\""
+      $history[m.user.nick] = new
+    elsif m.message =~ /\b(#{$yaml['curse'].join('|')})\b/i
       Channel($yaml['connect']['channels'].first).send "That's not necessary, #{m.user.nick}."
     end
   end
@@ -137,6 +147,9 @@ bot = Cinch::Bot.new do
   on :channel do |m|
     $users << m.user.nick
     debug "Target array: #{$users}"
+    binding.pry
+    $history[m.user.nick] = m.message if m.message !~ /(\w+: )?s\/.+\/\w+\//i
+    debug "History hash: #{$history}"
   end
 
 end
