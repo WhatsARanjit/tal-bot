@@ -67,11 +67,15 @@ class Tal
 
   def listen(m)
     @seen[m.user.nick] = Seen.new(m.user, m.channel, m.message, Time.now)
-    regexyou = /(\w+): s\/(.+)\/(\w+)\//i.match(m.message)
-    regexme = /s\/(.+)\/(\w+)\//i.match(m.message)
+    regexyou = /(\w+): s\/(.+)\/(.+)\//i.match(m.message)
+    regexme = /s\/(.+)\/(.+)\//i.match(m.message)
     if regexyou
       new = $history[regexyou[1]].gsub(/#{regexyou[2]}/i, regexyou[3])
-      Channel($yaml['connect']['channels'].first).send "#{m.user.nick} thinks #{regexyou[1]} meant \"#{new}\""
+      unless m.user.nick == regexyou[1]
+        Channel($yaml['connect']['channels'].first).send "#{m.user.nick} thinks #{regexyou[1]} meant \"#{new}\""
+      else
+        Channel($yaml['connect']['channels'].first).send "#{m.user.nick} meant \"#{new}\""
+      end
     elsif regexme
       new = $history[m.user.nick].gsub(/#{regexme[1]}/i, regexme[2])
       Channel($yaml['connect']['channels'].first).send "#{m.user.nick} meant \"#{new}\""
@@ -147,8 +151,7 @@ bot = Cinch::Bot.new do
   on :channel do |m|
     $users << m.user.nick
     debug "Target array: #{$users}"
-    binding.pry
-    $history[m.user.nick] = m.message if m.message !~ /(\w+: )?s\/.+\/\w+\//i
+    $history[m.user.nick] = m.message if m.message !~ /(\w+: )?s\/.+\/.+\//i
     debug "History hash: #{$history}"
   end
 
