@@ -32,6 +32,7 @@ class Tal
   def initialize(*args)
     super
     @seen = {}
+    @delay = 2
   end
 
   def urban_dict(query)
@@ -66,9 +67,10 @@ class Tal
   end
 
   def listen(m)
+    sleep @delay
     @seen[m.user.nick] = Seen.new(m.user, m.channel, m.message, Time.now)
-    regexyou = /(\w+): s\/(.+)\/(.+)\//i.match(m.message)
-    regexme = /s\/(.+)\/(.+)\//i.match(m.message)
+    regexyou = /^(\w+): s\/(.+)\/(.+)\//i.match(m.message)
+    regexme = /^s\/(.+)\/(.+)\//i.match(m.message)
     if regexyou
       new = Format( :italic, $history[regexyou[1]].gsub(/#{regexyou[2]}/i, regexyou[3]) )
       unless m.user.nick == regexyou[1]
@@ -86,6 +88,7 @@ class Tal
   end
 
   def execute(m)
+    sleep @delay
     case m.message
     when /\b(#{$yaml['curse'].join('|')})\b/i
       m.reply "That's not necessary, #{m.user.nick}."
@@ -124,7 +127,7 @@ class Tal
   def timed
     begin
       target = self.pick_reply($users)
-      #Channel($yaml['connect']['channels'].first).send "[#{intal}] #{self.pick_reply($yaml['talhate'])}, #{target}!"
+      Channel($yaml['connect']['channels'].first).send "[#{intal}] #{self.pick_reply($yaml['talhate'])}, #{target}!"
       $users = []
     rescue
       $intal
