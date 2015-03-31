@@ -115,7 +115,7 @@ class Tal
       m.reply "The current time is #{time.inspect}."
     when /where is/i
     when /define|(what is)/i
-      term = /(?:(?:define)|(?:what is\s?a?n?)) (.*)\b/i.match(m.message)[1]
+      term = /(?:(?:define)|(?:what is\s?a?n?(?:the)?)) (.*)\b/i.match(m.message)[1]
       m.reply(urban_dict(term) || "No results found", true)
     else
       m.reply "#{m.user.nick}, I don't understand."
